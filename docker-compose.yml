@@ -1,0 +1,12 @@
+services:
+  jauge-rentree:
+    build: .
+    container_name: jauge-rentree
+    restart: unless-stopped
+    ports:
+      - "8105:80"
+    volumes:
+      - jauge_data:/var/www/html/data
+
+volumes:
+  jauge_data:

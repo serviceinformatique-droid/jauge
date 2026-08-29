@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de bord — Rentrée scolaire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F1E9D8;
+    --card:#FBF7EC;
+    --ink:#22303A;
+    --ink-soft:#5B6B72;
+    --forest:#2F5233;
+    --forest-light:#DCE6D6;
+    --gold:#B9861B;
+    --gold-light:#F3E4BE;
+    --red:#A33327;
+    --red-light:#F1DAD5;
+    --border:rgba(34,48,58,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    font-family:'IBM Plex Sans', sans-serif;
+    color:var(--ink);
+    padding:40px 20px 80px;
+  }
+  .wrap{max-width:900px;margin:0 auto;}
+
+  header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:24px;
+    margin-bottom:36px;
+    flex-wrap:wrap;
+  }
+  .title-block h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:32px;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  .title-block p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:14px;
+  }
+  .version-tag{
+    margin-top:6px !important;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px !important;
+    color:var(--ink-soft);
+    opacity:0.7;
+  }
+
+  .stamp{
+    position:relative;
+    width:118px;
+    height:118px;
+    flex-shrink:0;
+  }
+  .stamp svg{width:100%;height:100%;transform:rotate(-90deg);}
+  .stamp-track{fill:none;stroke:rgba(163,51,39,0.15);stroke-width:8;}
+  .stamp-fill{fill:none;stroke:var(--red);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .5s ease;}
+  .stamp-label{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    transform:rotate(-4deg);
+  }
+  .stamp-pct{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:24px;color:var(--red);}
+  .stamp-caption{font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;}
+
+  .toolbar{
+    display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:24px;
+  }
+  #save-indicator{
+    font-size:13px;color:var(--ink-soft);opacity:0;transition:opacity .3s ease;
+  }
+  #save-indicator.show{opacity:1;}
+  #admin-toggle{
+    display:flex;align-items:center;gap:8px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:8px 16px;
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+    color:var(--ink);
+    transition:background .15s ease, border-color .15s ease;
+  }
+  #admin-toggle:hover{border-color:var(--ink-soft);}
+  body.admin-mode #admin-toggle{
+    background:var(--red);
+    border-color:var(--red);
+    color:#fff;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--forest);}
+  body.admin-mode .dot{background:#fff;}
+
+  .category{
+    margin-bottom:28px;
+  }
+  .tab{
+    display:inline-block;
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:15px;
+    padding:8px 20px 10px;
+    border-radius:10px 10px 0 0;
+    position:relative;
+    top:1px;
+  }
+  .category.c-forest .tab{background:var(--forest);color:var(--forest-light);}
+  .category.c-gold .tab{background:var(--gold);color:var(--gold-light);}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:0 12px 12px 12px;
+    overflow:hidden;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px 20px;
+    border-bottom:1px solid var(--border);
+  }
+  .row:last-child{border-bottom:none;}
+  .row-label{font-size:14px;line-height:1.4;flex:1;min-width:0;}
+
+  .order-controls{
+    display:none;
+    flex-direction:column;
+    gap:2px;
+    flex-shrink:0;
+  }
+  body.admin-mode .order-controls{display:flex;}
+  .order-btn{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:4px;
+    width:22px;
+    height:18px;
+    font-size:11px;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--ink-soft);
+    padding:0;
+  }
+  .order-btn:hover{border-color:var(--ink-soft);color:var(--ink);}
+  .order-btn:disabled{opacity:0.25;cursor:default;}
+
+  .row-gauge-wrap{width:200px;flex-shrink:0;}
+
+  .gauge{
+    position:relative;
+    height:10px;
+    background:rgba(34,48,58,0.08);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .gauge-fill{
+    height:100%;
+    border-radius:6px;
+    transition:width .4s ease;
+  }
+  .category.c-forest .gauge-fill{background:var(--forest);}
+  .category.c-gold .gauge-fill{background:var(--gold);}
+  .gauge-ticks{
+    position:absolute;inset:0;
+    display:flex;
+  }
+  .gauge-ticks span{
+    flex:1;
+    border-right:1px solid rgba(251,247,236,0.7);
+  }
+  .gauge-ticks span:last-child{border-right:none;}
+
+  .row-pct{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    font-weight:500;
+    text-align:right;
+    color:var(--ink-soft);
+    width:44px;
+    flex-shrink:0;
+  }
+
+  .row input[type="range"]{
+    width:100%;
+    accent-color:var(--red);
+    display:none;
+  }
+  body.admin-mode .row input[type="range"]{
+    display:block;
+  }
+  .row-delete{
+    display:none;
+    background:none;
+    border:none;
+    color:var(--red);
+    cursor:pointer;
+    font-size:18px;
+    padding:4px;
+    line-height:1;
+    flex-shrink:0;
+  }
+  body.admin-mode .row-delete{display:block;}
+  body.admin-mode .gauge-static{display:none;}
+  .gauge-static{display:block;}
+
+  .add-row{
+    display:none;
+    padding:10px 20px 16px;
+  }
+  body.admin-mode .add-row{display:flex;gap:10px;}
+  .add-row input{
+    flex:1;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:13px;
+    background:#fff;
+  }
+  .add-row button{
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:6px;
+    padding:8px 14px;
+    font-size:13px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .add-row button:hover{border-color:var(--ink-soft);}
+
+  .tab-wrap{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .tab-delete{
+    display:none;
+    background:none;
+    border:none;
+    cursor:pointer;
+    font-size:13px;
+    padding:6px 10px;
+    border-radius:0 10px 0 0;
+    align-self:stretch;
+  }
+  .category.c-forest .tab-delete{background:var(--forest);color:var(--forest-light);}
+  .category.c-gold .tab-delete{background:var(--gold);color:var(--gold-light);}
+  body.admin-mode .tab-delete{display:block;}
+  .tab-delete:hover{opacity:0.8;}
+  .tab-delete.confirm{background:var(--red) !important;color:#fff !important;}
+
+  .new-category{
+    display:none;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    background:var(--card);
+    border:1px dashed var(--border);
+    border-radius:12px;
+    padding:16px 20px;
+    margin-bottom:24px;
+  }
+  body.admin-mode .new-category{display:flex;}
+  .new-category input[type="text"]{
+    flex:1;
+    min-width:180px;
+    padding:9px 12px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:14px;
+    background:#fff;
+  }
+  .color-choice{
+    display:flex;
+    gap:14px;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .color-choice label{display:flex;align-items:center;gap:5px;cursor:pointer;}
+  #new-cat-btn{
+    border:1px solid var(--forest);
+    background:var(--forest);
+    color:#fff;
+    border-radius:8px;
+    padding:9px 16px;
+    font-size:14px;
+    cursor:pointer;
+  }
+  #new-cat-btn:hover{opacity:0.9;}
+
+  .fallback-banner{
+    display:none;
+    background:var(--gold-light);
+    color:#5c4008;
+    border:1px solid var(--gold);
+    border-radius:8px;
+    padding:10px 16px;
+    font-size:13px;
+    margin-bottom:20px;
+  }
+  .fallback-banner.show{display:block;}
+
+  footer{
+    margin-top:20px;
+    text-align:center;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+
+  .toolbar-admin-extra{display:none;align-items:center;gap:12px;}
+  body.admin-mode .toolbar-admin-extra{display:flex;}
+  .link-btn{
+    background:none;border:none;color:var(--ink-soft);
+    font-size:13px;text-decoration:underline;cursor:pointer;padding:0;
+  }
+  .link-btn:hover{color:var(--ink);}
+  .link-btn.danger{color:var(--red);}
+  .link-btn.danger:hover{color:var(--red);opacity:0.8;}
+  .link-btn.danger.confirm{
+    background:var(--red);
+    color:#fff;
+    text-decoration:none;
+    padding:6px 12px;
+    border-radius:6px;
+  }
+  #save-btn{
+    border:1px solid var(--forest);
+    background:var(--forest);
+    color:#fff;
+    border-radius:999px;
+    padding:8px 16px;
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+  }
+  #save-btn:hover{opacity:0.9;}
+  #save-btn:disabled{opacity:0.6;cursor:default;}
+  #save-indicator.error{color:var(--red);opacity:1;}
+
+  .modal-overlay{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(34,48,58,0.45);
+    align-items:center;justify-content:center;
+    z-index:100;
+    padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:var(--card);
+    border-radius:14px;
+    padding:28px 28px 24px;
+    max-width:340px;
+    width:100%;
+    border:1px solid var(--border);
+  }
+  .modal-box h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:19px;
+    margin:0 0 6px;
+  }
+  .modal-box p.hint{
+    margin:0 0 16px;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .modal-box input[type="password"]{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:14px;
+    margin-bottom:10px;
+    background:#fff;
+  }
+  .modal-error{
+    color:var(--red);
+    font-size:13px;
+    margin:-2px 0 10px;
+    display:none;
+  }
+  .modal-error.show{display:block;}
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:6px;
+  }
+  .modal-actions button{
+    flex:1;
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:14px;
+    cursor:pointer;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--ink);
+  }
+  .modal-actions button.primary{
+    background:var(--red);
+    border-color:var(--red);
+    color:#fff;
+  }
+
+  @media (max-width:600px){
+    .row{flex-wrap:wrap;gap:8px;}
+    .row-gauge-wrap{width:100%;order:3;}
+    .row-label{width:100%;order:1;}
+    .row-pct{order:2;}
+    .order-controls{order:0;}
+    .row-pct{text-align:left;}
+    header{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="title-block">
+      <h1>Rentrée scolaire</h1>
+      <p>Suivi d'avancement des tâches administratives et informatiques</p>
+      <p class="version-tag">V1.02</p>
+    </div>
+    <div class="stamp">
+      <svg viewBox="0 0 120 120">
+        <circle class="stamp-track" cx="60" cy="60" r="52"></circle>
+        <circle id="stamp-fill" class="stamp-fill" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="326.7"></circle>
+      </svg>
+      <div class="stamp-label">
+        <div class="stamp-pct" id="stamp-pct">0%</div>
+        <div class="stamp-caption">Global</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="fallback-banner" id="fallback-banner">
+    Stockage serveur : les données sont enregistrées sur le serveur et visibles par tous les visiteurs de cette page.
+  </div>
+
+  <div class="toolbar">
+    <span id="save-indicator">Enregistré</span>
+    <div class="toolbar-admin-extra">
+      <button class="link-btn" id="change-password-btn">Changer le mot de passe</button>
+      <button class="link-btn danger" id="reset-btn">Réinitialiser toutes les jauges (0%)</button>
+      <button id="save-btn">Enregistrer</button>
+    </div>
+    <button id="admin-toggle">
+      <span class="dot"></span>
+      <span id="admin-toggle-label">Mode consultation</span>
+    </button>
+  </div>
+
+  <div id="categories"></div>
+
+  <div class="new-category" id="new-category-row">
+    <input type="text" id="new-cat-name" placeholder="Nom de la nouvelle catégorie…">
+    <div class="color-choice">
+      <label><input type="radio" name="new-cat-color" value="forest" checked> Vert</label>
+      <label><input type="radio" name="new-cat-color" value="gold"> Or</label>
+    </div>
+    <button id="new-cat-btn">Créer la catégorie</button>
+  </div>
+
+  <footer>Les modifications en mode administration sont visibles par toute personne consultant ce tableau.</footer>
+</div>
+
+<div class="modal-overlay" id="unlock-overlay">
+  <div class="modal-box">
+    <h2>Mode administration</h2>
+    <p class="hint">Saisissez le mot de passe pour modifier les jauges.</p>
+    <input type="password" id="unlock-input" placeholder="Mot de passe" autocomplete="off">
+    <p class="modal-error" id="unlock-error">Mot de passe incorrect.</p>
+    <div class="modal-actions">
+      <button id="unlock-cancel">Annuler</button>
+      <button class="primary" id="unlock-confirm">Déverrouiller</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="changepw-overlay">
+  <div class="modal-box">
+    <h2>Nouveau mot de passe</h2>
+    <p class="hint">Ce mot de passe sera demandé à toute personne qui veut entrer en mode administration.</p>
+    <input type="password" id="changepw-input" placeholder="Nouveau mot de passe" autocomplete="off">
+    <input type="password" id="changepw-confirm" placeholder="Confirmer le mot de passe" autocomplete="off">
+    <p class="modal-error" id="changepw-error">Les mots de passe ne correspondent pas.</p>
+    <div class="modal-actions">
+      <button id="changepw-cancel">Annuler</button>
+      <button class="primary" id="changepw-confirm-btn">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'rentree-progress-data';
+const PASSWORD_KEY = 'rentree-admin-password';
+const DEFAULT_PASSWORD = 'rentree2026';
+
+let usingFallbackStorage = false;
+let lastServerError = null;
+if(!window.storage){
+  usingFallbackStorage = true;
+  const API = 'save.php';
+  window.storage = {
+    async get(key){
+      const res = await fetch(API + '?key=' + encodeURIComponent(key));
+      if(!res.ok) throw new Error('Clé introuvable');
+      const json = await res.json();
+      return { key, value: json.value };
+    },
+    async set(key, value){
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value })
+      });
+      if(!res.ok){
+        try{
+          const errJson = await res.json();
+          console.error('Erreur serveur:', errJson.error);
+          lastServerError = errJson.error || null;
+        }catch(e){}
+        return null;
+      }
+      return { key, value };
+    },
+    async delete(key){
+      return { key, deleted: true };
+    },
+    async list(prefix){
+      return { keys: [] };
+    }
+  };
+}
+
+const defaultData = [
+  { id:'familles', name:'Familles', color:'forest', items:[
+    { id:'f1', label:"Envoyer les identifiants ED aux familles et aux nouveaux élèves", value:100 }
+  ]},
+  { id:'primaire', name:'Primaire', color:'gold', items:[
+    { id:'p1', label:"Édition des cartes des primaires", value:100 }
+  ]},
+  { id:'profs', name:'Nouveaux professeurs', color:'forest', items:[
+    { id:'pr1', label:"Édition des cartes", value:100 },
+    { id:'pr2', label:"Distribution des chartes", value:100 },
+    { id:'pr3', label:"Mot de passe ED / Alcasar (wifi)", value:100 }
+  ]},
+  { id:'notes', name:'Notes', color:'gold', items:[
+    { id:'n1', label:"Mise à jour des équipes pédagogiques sur Charlemagne notes", value:90 },
+    { id:'n2', label:"Création des groupes", value:95 },
+    { id:'n3', label:"Attribution des groupes aux professeurs", value:95 },
+    { id:'n4', label:"Intégration des élèves dans les groupes", value:95 },
+    { id:'n5', label:"Rattachement des groupes sur l'EDT", value:95 }
+  ]},
+  { id:'manuels', name:'Manuels numériques', color:'forest', items:[
+    { id:'m1', label:"Intégration des manuels sur ED", value:100 },
+    { id:'m2', label:"Distribution des manuels sur Tabuléo", value:0 },
+    { id:'m3', label:"Envoi sur ED des feuilles droit à l'image + identifiants élèves", value:100 }
+  ]},
+  { id:'comptes', name:'Création des comptes des élèves', color:'gold', items:[
+    { id:'c1', label:"Comptes Windows", value:100 },
+    { id:'c2', label:"Comptes PMB (CDI)", value:100 },
+    { id:'c3', label:"PMB lycée", value:100 },
+    { id:'c4', label:"Pointage (CDI)", value:100 },
+    { id:'c5', label:"Comptes Teams", value:100 }
+  ]}
+];
+
+let data = null;
+let adminMode = false;
+let saveTimeout = null;
+let adminPassword = DEFAULT_PASSWORD;
+
+async function loadPassword(){
+  try{
+    const res = await window.storage.get(PASSWORD_KEY, true);
+    adminPassword = res.value;
+  }catch(e){
+    adminPassword = DEFAULT_PASSWORD;
+    try{ await window.storage.set(PASSWORD_KEY, adminPassword, true); }catch(e2){}
+  }
+}
+
+async function loadData(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    data = JSON.parse(res.value);
+  }catch(e){
+    data = JSON.parse(JSON.stringify(defaultData));
+    await persist();
+  }
+  render();
+}
+
+async function persist(){
+  try{
+    const result = await window.storage.set(STORAGE_KEY, JSON.stringify(data), true);
+    if(!result){
+      showError();
+      return false;
+    }
+    showSaved();
+    return true;
+  }catch(e){
+    console.error('Erreur de sauvegarde', e);
+    showError();
+    return false;
+  }
+}
+
+function showSaved(){
+  const el = document.getElementById('save-indicator');
+  el.classList.remove('error');
+  el.textContent = 'Enregistré';
+  el.classList.add('show');
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(()=>el.classList.remove('show'), 1200);
+}
+
+function showError(){
+  const el = document.getElementById('save-indicator');
+  el.classList.add('show', 'error');
+  el.textContent = lastServerError ? ("Échec : " + lastServerError) : "Échec de l'enregistrement — réessayez";
+  clearTimeout(saveTimeout);
+}
+
+function overallProgress(){
+  let all = [];
+  data.forEach(cat => cat.items.forEach(it => all.push(it.value)));
+  if(all.length === 0) return 0;
+  return Math.round(all.reduce((a,b)=>a+b,0) / all.length);
+}
+
+function updateStamp(){
+  const pct = overallProgress();
+  const circumference = 326.7;
+  const offset = circumference - (circumference * pct / 100);
+  document.getElementById('stamp-fill').style.strokeDashoffset = offset;
+  document.getElementById('stamp-pct').textContent = pct + '%';
+}
+
+function render(){
+  updateStamp();
+  const container = document.getElementById('categories');
+  container.innerHTML = '';
+
+  data.forEach((cat, catIndex) => {
+    const catEl = document.createElement('div');
+    catEl.className = 'category c-' + cat.color;
+
+    const tabWrap = document.createElement('div');
+    tabWrap.className = 'tab-wrap';
+
+    const catOrder = document.createElement('div');
+    catOrder.className = 'order-controls';
+    const catUp = document.createElement('button');
+    catUp.className = 'order-btn';
+    catUp.textContent = '↑';
+    catUp.setAttribute('aria-label', 'Monter la catégorie ' + cat.name);
+    catUp.disabled = catIndex === 0;
+    catUp.addEventListener('click', async () => {
+      const idx = data.indexOf(cat);
+      if(idx <= 0) return;
+      [data[idx - 1], data[idx]] = [data[idx], data[idx - 1]];
+      const ok = await persist();
+      if(!ok){ [data[idx - 1], data[idx]] = [data[idx], data[idx - 1]]; return; }
+      render();
+    });
+    const catDown = document.createElement('button');
+    catDown.className = 'order-btn';
+    catDown.textContent = '↓';
+    catDown.setAttribute('aria-label', 'Descendre la catégorie ' + cat.name);
+    catDown.disabled = catIndex === data.length - 1;
+    catDown.addEventListener('click', async () => {
+      const idx = data.indexOf(cat);
+      if(idx < 0 || idx >= data.length - 1) return;
+      [data[idx + 1], data[idx]] = [data[idx], data[idx + 1]];
+      const ok = await persist();
+      if(!ok){ [data[idx + 1], data[idx]] = [data[idx], data[idx + 1]]; return; }
+      render();
+    });
+    catOrder.appendChild(catUp);
+    catOrder.appendChild(catDown);
+    tabWrap.appendChild(catOrder);
+
+    const tab = document.createElement('div');
+    tab.className = 'tab';
+    tab.textContent = cat.name;
+    tabWrap.appendChild(tab);
+
+    const tabDelete = document.createElement('button');
+    tabDelete.className = 'tab-delete';
+    tabDelete.textContent = 'Supprimer la catégorie';
+    tabDelete.setAttribute('aria-label', 'Supprimer la catégorie ' + cat.name);
+    let confirming = false;
+    tabDelete.addEventListener('click', async () => {
+      if(!confirming){
+        confirming = true;
+        tabDelete.textContent = 'Confirmer la suppression ?';
+        tabDelete.classList.add('confirm');
+        setTimeout(() => {
+          confirming = false;
+          tabDelete.textContent = 'Supprimer la catégorie';
+          tabDelete.classList.remove('confirm');
+        }, 3000);
+        return;
+      }
+      const index = data.indexOf(cat);
+      const removed = data.splice(index, 1)[0];
+      const ok = await persist();
+      if(!ok){
+        data.splice(index, 0, removed);
+        return;
+      }
+      render();
+    });
+    tabWrap.appendChild(tabDelete);
+    catEl.appendChild(tabWrap);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    cat.items.forEach((item, itemIndex) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const itemOrder = document.createElement('div');
+      itemOrder.className = 'order-controls';
+      const itemUp = document.createElement('button');
+      itemUp.className = 'order-btn';
+      itemUp.textContent = '↑';
+      itemUp.setAttribute('aria-label', 'Monter cette tâche');
+      itemUp.disabled = itemIndex === 0;
+      itemUp.addEventListener('click', async () => {
+        const idx = cat.items.indexOf(item);
+        if(idx <= 0) return;
+        [cat.items[idx - 1], cat.items[idx]] = [cat.items[idx], cat.items[idx - 1]];
+        const ok = await persist();
+        if(!ok){ [cat.items[idx - 1], cat.items[idx]] = [cat.items[idx], cat.items[idx - 1]]; return; }
+        render();
+      });
+      const itemDown = document.createElement('button');
+      itemDown.className = 'order-btn';
+      itemDown.textContent = '↓';
+      itemDown.setAttribute('aria-label', 'Descendre cette tâche');
+      itemDown.disabled = itemIndex === cat.items.length - 1;
+      itemDown.addEventListener('click', async () => {
+        const idx = cat.items.indexOf(item);
+        if(idx < 0 || idx >= cat.items.length - 1) return;
+        [cat.items[idx + 1], cat.items[idx]] = [cat.items[idx], cat.items[idx + 1]];
+        const ok = await persist();
+        if(!ok){ [cat.items[idx + 1], cat.items[idx]] = [cat.items[idx], cat.items[idx + 1]]; return; }
+        render();
+      });
+      itemOrder.appendChild(itemUp);
+      itemOrder.appendChild(itemDown);
+      row.appendChild(itemOrder);
+
+      const label = document.createElement('div');
+      label.className = 'row-label';
+      label.textContent = item.label;
+      row.appendChild(label);
+
+      const gaugeWrap = document.createElement('div');
+      gaugeWrap.className = 'row-gauge-wrap';
+
+      const staticGauge = document.createElement('div');
+      staticGauge.className = 'gauge gauge-static';
+      const fill = document.createElement('div');
+      fill.className = 'gauge-fill';
+      fill.style.width = item.value + '%';
+      const ticks = document.createElement('div');
+      ticks.className = 'gauge-ticks';
+      for(let i=0;i<10;i++){ ticks.appendChild(document.createElement('span')); }
+      staticGauge.appendChild(fill);
+      staticGauge.appendChild(ticks);
+      gaugeWrap.appendChild(staticGauge);
+
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.min = 0;
+      slider.max = 100;
+      slider.step = 5;
+      slider.value = item.value;
+      slider.disabled = !adminMode;
+      slider.addEventListener('input', () => {
+        item.value = parseInt(slider.value, 10);
+        pct.textContent = item.value + '%';
+        fill.style.width = item.value + '%';
+        updateStamp();
+      });
+      slider.addEventListener('change', () => persist());
+      gaugeWrap.appendChild(slider);
+
+      row.appendChild(gaugeWrap);
+
+      const pct = document.createElement('div');
+      pct.className = 'row-pct';
+      pct.textContent = item.value + '%';
+      row.appendChild(pct);
+
+      const del = document.createElement('button');
+      del.className = 'row-delete';
+      del.setAttribute('aria-label', 'Supprimer cette tâche');
+      del.textContent = '×';
+      del.addEventListener('click', async () => {
+        const removed = cat.items;
+        cat.items = cat.items.filter(i => i.id !== item.id);
+        const ok = await persist();
+        if(!ok){
+          cat.items = removed;
+          return;
+        }
+        render();
+      });
+      row.appendChild(del);
+
+      card.appendChild(row);
+    });
+
+    const addRow = document.createElement('div');
+    addRow.className = 'add-row';
+    const addInput = document.createElement('input');
+    addInput.type = 'text';
+    addInput.placeholder = 'Nouvelle tâche…';
+    const addBtn = document.createElement('button');
+    addBtn.textContent = 'Ajouter';
+    addBtn.addEventListener('click', async () => {
+      const text = addInput.value.trim();
+      if(!text) return;
+      const newItem = { id: 'item-' + Date.now(), label: text, value: 0 };
+      cat.items.push(newItem);
+      addBtn.disabled = true;
+      const ok = await persist();
+      addBtn.disabled = false;
+      if(!ok){
+        cat.items = cat.items.filter(i => i.id !== newItem.id);
+        return;
+      }
+      addInput.value = '';
+      render();
+    });
+    addRow.appendChild(addInput);
+    addRow.appendChild(addBtn);
+    card.appendChild(addRow);
+
+    catEl.appendChild(card);
+    container.appendChild(catEl);
+  });
+}
+
+const unlockOverlay = document.getElementById('unlock-overlay');
+const unlockInput = document.getElementById('unlock-input');
+const unlockError = document.getElementById('unlock-error');
+const changepwOverlay = document.getElementById('changepw-overlay');
+const changepwInput = document.getElementById('changepw-input');
+const changepwConfirm = document.getElementById('changepw-confirm');
+const changepwError = document.getElementById('changepw-error');
+
+function openUnlock(){
+  unlockInput.value = '';
+  unlockError.classList.remove('show');
+  unlockOverlay.classList.add('show');
+  setTimeout(()=>unlockInput.focus(), 50);
+}
+function closeUnlock(){
+  unlockOverlay.classList.remove('show');
+}
+function tryUnlock(){
+  if(unlockInput.value === adminPassword){
+    adminMode = true;
+    document.body.classList.add('admin-mode');
+    document.getElementById('admin-toggle-label').textContent = 'Mode administration';
+    setSlidersEnabled(true);
+    closeUnlock();
+  }else{
+    unlockError.classList.add('show');
+    unlockInput.value = '';
+    unlockInput.focus();
+  }
+}
+
+function setSlidersEnabled(enabled){
+  document.querySelectorAll('.row input[type="range"]').forEach(s => { s.disabled = !enabled; });
+}
+
+document.getElementById('admin-toggle').addEventListener('click', () => {
+  if(adminMode){
+    adminMode = false;
+    document.body.classList.remove('admin-mode');
+    document.getElementById('admin-toggle-label').textContent = 'Mode consultation';
+    setSlidersEnabled(false);
+  }else{
+    openUnlock();
+  }
+});
+document.getElementById('unlock-confirm').addEventListener('click', tryUnlock);
+document.getElementById('unlock-cancel').addEventListener('click', closeUnlock);
+unlockInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') tryUnlock(); });
+
+function openChangePw(){
+  changepwInput.value = '';
+  changepwConfirm.value = '';
+  changepwError.classList.remove('show');
+  changepwOverlay.classList.add('show');
+  setTimeout(()=>changepwInput.focus(), 50);
+}
+function closeChangePw(){
+  changepwOverlay.classList.remove('show');
+}
+async function saveNewPassword(){
+  if(!changepwInput.value || changepwInput.value !== changepwConfirm.value){
+    changepwError.classList.add('show');
+    return;
+  }
+  adminPassword = changepwInput.value;
+  try{
+    await window.storage.set(PASSWORD_KEY, adminPassword, true);
+    showSaved();
+  }catch(e){
+    console.error('Erreur de sauvegarde du mot de passe', e);
+  }
+  closeChangePw();
+}
+document.getElementById('change-password-btn').addEventListener('click', openChangePw);
+document.getElementById('changepw-cancel').addEventListener('click', closeChangePw);
+document.getElementById('changepw-confirm-btn').addEventListener('click', saveNewPassword);
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  await persist();
+  btn.disabled = false;
+});
+
+document.getElementById('new-cat-btn').addEventListener('click', async () => {
+  const nameInput = document.getElementById('new-cat-name');
+  const name = nameInput.value.trim();
+  if(!name) return;
+  const color = document.querySelector('input[name="new-cat-color"]:checked').value;
+  const newCat = { id: 'cat-' + Date.now(), name, color, items: [] };
+  data.push(newCat);
+  const btn = document.getElementById('new-cat-btn');
+  btn.disabled = true;
+  const ok = await persist();
+  btn.disabled = false;
+  if(!ok){
+    data.pop();
+    return;
+  }
+  nameInput.value = '';
+  render();
+});
+
+let resetConfirming = false;
+let resetTimeout = null;
+const resetBtn = document.getElementById('reset-btn');
+resetBtn.addEventListener('click', async () => {
+  if(!resetConfirming){
+    resetConfirming = true;
+    resetBtn.textContent = 'Confirmer : tout remettre à 0% ?';
+    resetBtn.classList.add('confirm');
+    resetTimeout = setTimeout(() => {
+      resetConfirming = false;
+      resetBtn.textContent = 'Réinitialiser toutes les jauges (0%)';
+      resetBtn.classList.remove('confirm');
+    }, 4000);
+    return;
+  }
+  clearTimeout(resetTimeout);
+  resetConfirming = false;
+  resetBtn.classList.remove('confirm');
+  const previousValues = data.map(cat => cat.items.map(it => it.value));
+  data.forEach(cat => cat.items.forEach(it => { it.value = 0; }));
+  resetBtn.disabled = true;
+  resetBtn.textContent = 'Réinitialisation…';
+  const ok = await persist();
+  resetBtn.disabled = false;
+  resetBtn.textContent = 'Réinitialiser toutes les jauges (0%)';
+  if(!ok){
+    data.forEach((cat, i) => cat.items.forEach((it, j) => { it.value = previousValues[i][j]; }));
+    return;
+  }
+  render();
+});
+
+if(usingFallbackStorage){
+  document.getElementById('fallback-banner').classList.add('show');
+}
+
+loadPassword().then(loadData);
+</script>
+</body>
+</html>
